@@ -1,7 +1,6 @@
 @import "../../dojo/resources/dojo.css";
-@import "../../dijit/themes/soria/soria.css";
-@import "../../dojox/grid/resources/Grid.css";
-@import "../../dojox/grid/resources/soriaGrid.css";
+@import "../../dijit/themes/claro/claro.css";
+@import "../../dgrid/css/dgrid.css";
 
 html, body, #main{	
 	width: 100%;	/* make the body expand to fill the visible window */
@@ -34,13 +33,14 @@ table.demoTable {
 }
 
 th {
-	background-color: #4f8ce5; 
 	color: #666; 
-	font-weight:: bold !important;
+	font-weight: bold !important;
 	margin:0;
-	padding:3px; 
-	background-image:url('../../dijit/themes/soria/images/titleBar.png');
-	background-position:0px -1px; 
+	padding:3px;
+	background: #4f8ce5 url('../../dijit/themes/soria/images/titleBar.png') 0px -1px;
+	background: -moz-linear-gradient(top, #EDF2F7, #D0DFEA);
+	background: -webkit-gradient(linear, left top, left bottom, from(#EDF2F7), to(#D0DFEA));
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr=#FFEDF2F7, endColorstr=#FFD0DFEA);
 }
 
 .dijitRtl caption,
@@ -128,8 +128,7 @@ body .dojoSplitPane {
 .mailIconMailbox,
 .mailIconOk,
 .mailIconTrashcanFull {
-	background-image: url('icons.png'); /* mail icons sprite image */
-	background-repeat: no-repeat; 
+	background: url('icons.png') no-repeat; /* mail icons sprite image */
 	width: 16px;
 	height: 16px;
 	text-align: center;
@@ -150,7 +149,7 @@ body .dojoSplitPane {
 }
 
 
-.mailIconCancel { background-position: 0px; }
+.mailIconCancel { background-position: 0; }
 .mailIconOptions { background-position: -22px; }
 .mailIconFolderDocuments { background-position: -44px; }
 .mailIconFolderInbox { background-position: -66px; }
@@ -163,7 +162,7 @@ body .dojoSplitPane {
 
 /* page inline styles */
 
-#inbox .dijitSplitterH { height: 5px }
+#inbox .dijitSplitterH { height: 5px; top:150px}
 #inbox .dijitSplitterV { width: 5px }
 
 #preLoader {
@@ -194,4 +193,39 @@ body .dojoSplitPane {
 .contactIndexSelected {
 	/* the most recently selected letter gets this class too */
 	color: red;
+}
+
+#messageList .dgrid, #contactList .dgrid {
+	border: none;
+}
+#messageList, #contactList {
+	padding:0;
+}
+#messageList .dgrid-row-odd, #contactList .dgrid-row-odd {
+	background: #F2F5F9;
+}
+#messageList .dgrid-column-sender {
+	width: 15%;
+}
+#messageList .dgrid-column-date {
+	width: 10%;
+}
+#folderTree.dgrid, #folderTree.dgrid td {
+	border: none;
+	cursor: default;
+}
+#folderTree.dgrid td:hover, #messageList .dgrid-row:hover, #contactList .dgrid-row:hover {
+	border-color: #759dc0;
+	background-color: #abd6ff;
+	background-image: -moz-linear-gradient(rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 100%);
+	background-image: -webkit-linear-gradient(rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 100%);
+	background-image: -o-linear-gradient(rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 100%);
+	background-image: linear-gradient(rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+#message:focus, #messageList, div, span {
+	outline: none;
+}
+.dgrid-expando-icon.ui-icon {
+	cursor: pointer;
 }

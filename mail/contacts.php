@@ -1,7 +1,7 @@
 { 
-	identifier: 'email',
-	label: 'display',
-	items: [
+	"identifier": "id",
+	"label": "display",
+	"data": [
 
 <?php
     $counter = 0;
@@ -14,15 +14,16 @@
 		    $email = strtolower($first) . "." . strtolower($last) . $ext[$counter%3];
 		    $display = $name . " <" . $email . ">";
 			print "{ " .
-					"first: '" . $first . "',\n" .
-					"last: '" . $last . "',\n" .
-					"email: '" . $email . "',\n" .
-					"display: '" . $display . "'\n" .
+					"\"id\": \"" . $counter . "\",\n" .
+					"\"first\": \"" . $first . "\",\n" .
+					"\"last\": \"" . $last . "\",\n" .
+					"\"email\": \"" . $email . "\",\n" .
+					"\"display\": \"" . $display . "\"\n" .
 				 "},\n";
 			$counter ++;
 		}
 	}
 ?>
-	{name: 'Blue Bell', email: 'blue.bell@gmail.com'}
+	{"name": "Blue Bell", "email": "blue.bell@gmail.com"}
    ]
 }
