@@ -1,9 +1,18 @@
 require([
-	"dojo/_base/array", "dojo/_base/fx", "dojo/_base/window", "dojo/dom", "dojo/dom-class", "dojo/dom-geometry", "dojo/dom-style",
+	"dojo/io-query", "dojo/query", "dojo/on", "dojo/_base/array", "dojo/number", "dojo/_base/fx", "dojo/dom", "dojo/dom-class", "dojo/dom-geometry", "dojo/dom-style",
 	"dojo/hccss", "dojo/date/locale", "dojo/parser", "dojo/store/Memory",
 	"dijit/registry", "dijit/tree/ObjectStoreModel",
 
 	"dijit/CheckedMenuItem", "dijit/RadioMenuItem", "dijit/MenuSeparator",
+
+	// dgrid
+	"dstore/Memory",
+	"dgrid/OnDemandGrid",
+
+	// chart
+	"dojox/charting/Chart", "dojox/charting/plot2d/Pie", "dojox/charting/action2d/Highlight",
+	"dojox/charting/action2d/MoveSlice" , "dojox/charting/action2d/Tooltip",
+	"dojox/charting/themes/MiamiNice", "dojox/charting/widget/Legend",
 
 	// Editors used by InlineEditBox.  Must be pre-loaded.
 	"dijit/form/Textarea", "dijit/form/DateTextBox", "dijit/form/TimeTextBox", "dijit/form/FilteringSelect",
@@ -24,63 +33,13 @@ require([
 
 	// Don't call the parser until the DOM has finished loading
 	"dojo/domReady!"
-], function(array, baseFx, win, dom, domClass, domGeom, domStyle, has, locale, parser, Memory, registry, ObjectStoreModel,
-			CheckedMenuItem, RadioMenuItem, MenuSeparator){
+], function(ioQuery, query, on, array, number, baseFx, dom, domClass, domGeom, domStyle, has, locale, parser, Memory, registry, ObjectStoreModel,
+			CheckedMenuItem, RadioMenuItem, MenuSeparator, DstoreMemory, OnDemandGrid, Chart, Pie, Highlight, MoveSlice, Tooltip, MiamiNice, Legend){
 	// If you are doing box-model sizing then need to tell dom-geometry, see #15104
 	if(domStyle.get(document.body, "boxSizing") == "border-box" ||
 		domStyle.get(document.body, "MozBoxSizing") == "border-box"){
 		domGeom.boxModel = "border-box";
 	}
-
-	// various function ripped out of inline script type=dojo/* blocks
-	showDialog = function(){
-		var dlg = registry.byId('dialog1');
-		dlg.show();
-		// avoid (trying to) restore focus to a closed menu, go to MenuBar instead
-		dlg._savedFocus = dom.byId("header");
-	};
-
-	showDialogAb = function(){
-		var dlg = registry.byId('dialogAB');
-		dlg.show();
-		// avoid (trying to) restore focus to a closed menu, go to MenuBar instead
-		dlg._savedFocus = dom.byId("header");
-	};
-
-	//var setTextBoxPadding;
-	// current setting (if there is one) to override theme default padding on TextBox based widgets
-	var currentInputPadding = "";
-
-	setTextBoxPadding = function(){
-		// summary:
-		//		Handler for when a MenuItem is clicked to set non-default padding for
-		//		TextBox widgets
-
-		// Effectively ignore clicks on the	 currently checked MenuItem
-		if(!this.get("checked")){
-			this.set("checked", true);
-		}
-
-		// val will be "theme default", "0px", "1px", ..., "5px"
-		var val = this.get("label");
-
-		// Set class on body to get requested padding, and remove any previously set class
-		if(currentInputPadding){
-			domClass.remove(win.body(), currentInputPadding);
-			currentInputPadding = "";
-		}
-		if(val != "theme default"){
-			currentInputPadding = "inputPadding" + val.replace("px", "");
-			domClass.add(win.body(), currentInputPadding);
-		}
-
-		// Clear previously checked MenuItem (radio-button effect).
-		array.forEach(this.getParent().getChildren(), function(mi){
-			if(mi != this){
-				mi.set("checked", false);
-			}
-		}, this);
-	};
 
 	// Data for Tree, ComboBox, InlineEditBox
 	var data = [
@@ -134,88 +93,284 @@ require([
 	// Create the model for the Tree
 	continentModel = new ObjectStoreModel({store: continentStore, query: {id: "earth"}});
 
-	parser.parse(dom.byId('container')).then(function(){
-		dom.byId('loaderInner').innerHTML += " done.";
-		setTimeout(function hideLoader(){
-			baseFx.fadeOut({
-				node: 'loader',
-				duration: 500,
-				onEnd: function(n){
-					n.style.display = "none";
-				}
-			}).play();
-		}, 250);
+	// Switch theme base on query theme
+	var queries = ioQuery.queryToObject(location.search.slice(1)),
+		theme,
+		dir;
+	if (queries.theme) {
+		// load the theme
+		theme = queries.theme;
+		if (queries.dir) {
+			query('link')[2].href = '../../dijit/themes/' + theme + '/' + theme + '_rtl.css';
+		}
+	}
+	else {
+		// default to claro
+		theme = 'claro';
+	}
+	query('link')[0].href = '../../dijit/themes/' + theme + '/document.css';
+	query('link')[1].href = '../../dijit/themes/' + theme + '/' + theme + '.css';
+	// dgrid
+	query('link')[3].href = '../../dgrid/css/skins/' + theme + '.css';
 
-		// availableThemes[] is just a list of 'official' dijit themes, you can use ?theme=String
-		// for 'un-supported' themes, too. (eg: yours)
-		var availableThemes = [
-			{ theme: "claro", author: "Dojo", baseUri: "../themes/" },
-			{ theme: "tundra", author: "Dojo", baseUri: "../themes/" },
-			{ theme: "soria", author: "nikolai", baseUri: "../themes/" },
-			{ theme: "nihilo", author: "nikolai", baseUri: "../themes/" }
-		];
+	domClass.add(document.body, theme);
 
-		// Get current theme, a11y, and dir setting for page
-		var curTheme = location.search.replace(/.*theme=([a-z]+).*/, "$1") || "claro",
+	parser.parse(document.body).then(function(){
+		var dialogAB = registry.byId('dialogAB'),
+			dialog1 = registry.byId('dialog1'),
+			themeMenu = registry.byId('themeMenu'),
+			areaEditable = registry.byId('areaEditable'),
+			// current setting (if there is one) to override theme default padding on TextBox based widgets
+			currentInputPadding = "",
+			// availableThemes[] is just a list of 'official' dijit themes, you can use ?theme=String
+			// for 'un-supported' themes, too. (eg: yours)
+			availableThemes = [
+				{ theme: "claro", author: "Dojo", baseUri: "../themes/" },
+				{ theme: "tundra", author: "Dojo", baseUri: "../themes/" },
+				{ theme: "soria", author: "nikolai", baseUri: "../themes/" },
+				{ theme: "nihilo", author: "nikolai", baseUri: "../themes/" }
+			],
+			// Get current theme, a11y, and dir setting for page
+			curTheme = location.search.replace(/.*theme=([a-z]+).*/, "$1") || "claro",
 			a11y = has("highcontrast") || /a11y=true/.test(location.search),
-			rtl = document.body.parentNode.dir == "rtl";
-		
+			rtl = document.body.parentNode.dir == "rtl",
+			tmpString = '',
+			nineAm = new Date(0),
+			// dgrid
+			grid,
+			collection = new DstoreMemory({data: data});
+
+		// Events
+		on(contextMenuEnable, 'click', function () {
+			alert('Hello world');
+		});
+		query('.consoleLog', document.body).on('click', function (event) {
+			console.log(event.target.parentNode.getAttribute('data-message'));
+		});
+		query('.subMenu', popupContextMenu.domNode).on('click', function (event) {
+			alert(event.target.innerHTML + '!');
+		});
+		query('.showLoading', document.body).on('click', showDialog);
+		query('.actionBar', document.body).on('click', showDialogAb);
+		on(inputPaddingDefault, 'click', setTextBoxPadding);
+		on(inputPadding1, 'click', setTextBoxPadding);
+		on(inputPadding2, 'click', setTextBoxPadding);
+		on(inputPadding3, 'click', setTextBoxPadding);
+		on(inputPadding4, 'click', setTextBoxPadding);
+		on(inputPadding5, 'click', setTextBoxPadding);
+		on(registry.byId('colorPalette'), 'change', setBackground);
+		on(registry.byId('colorPalette2'), 'change', setBackground);
+		on(simpleButton, 'click', function () {
+			console.debug('clicked simple');
+		});
+		on(editMenu1, 'click', function () {
+			console.debug('not actually cutting anything, just a test!');
+		});
+		on(editMenu2, 'click', function () {
+			console.debug('not actually copying anyything, just a test!');
+		});
+		on(editMenu3, 'click', function () {
+			console.debug('not actually pasting anyything, just a test!');
+		});
+		on(editMenu4, 'click', function () {
+			console.log("clicked combo save");
+		});
+		on(saveMenu1, 'click', function () {
+			console.debug('not actually saving anything, just a test!');
+		});
+		on(saveMenu2, 'click', function () {
+			console.debug('not actually saving anything, just a test!');
+		});
+		on(registry.byId('toggleButton'), 'change', function (a) {
+			console.log('toggle button checked=' + a)
+		});
+		on(ABdialog1button2, 'click', function () {
+			dialogAB.onCancel();
+		});
+		on(registry.byId('slider2'), 'change', function (a) {
+			slider2input.value = a;
+		});
+		on(registry.byId('horizontal1'), 'change', function (a) {
+			slider1input.value = number.format(a / 100, { places:1, pattern:'#%' })
+		});
+		on(disableEditable, 'click', function () {
+			areaEditable.set('disabled', true)
+		});
+		on(enableEditable, 'click', function () {
+			areaEditable.set('disabled', false)
+		});
+
+		topTabs.watch("selectedChildWidget", function(name, oval, nval){
+			// Prevent the contact grid from some weird rendering.
+			if (nval.title === "dgrid" && grid === undefined) {
+				createDgrid();
+			}
+		});
+
+		createChart();
+
+		hideLoadingScreen();
+
+		createThemeChoices();
+
+		// It's the server's responsibility to localize the date displayed in the (non-edit) version of an InlineEditBox,
+		// but since we don't have a server we'll hack it in the client
+		registry.byId("backgroundArea").set('value', locale.format(new Date(), { selector: 'date' }));
+
+		nineAm.setHours(9);
+		registry.byId("timePicker").set('value', locale.format(nineAm, { selector: 'time' }));
+
+		function createChart () {
+			var chart = new Chart("chart");
+
+			chart.setTheme(MiamiNice)
+				.addPlot("default", {
+					type: Pie,
+					font: "normal normal 11pt Tahoma",
+					fontColor: "black",
+					labelOffset: -30,
+					radius: 80
+				}).addSeries("Series A", [
+					{y: 4, text: "Pizza",   stroke: "black", tooltip: "Pizza is 50%"},
+					{y: 2, text: "Apple", stroke: "black", tooltip: "Apple is 25%"},
+					{y: 1, text: "Ice cream",  stroke: "black", tooltip: "I am feeling great!"},
+					{y: 1, text: "Other", stroke: "black", tooltip: "Mighty <strong>strong</strong><br>With two lines!"}
+				]);
+
+			new MoveSlice(chart, "default");
+			new Highlight(chart, "default");
+			new Tooltip(chart, "default");
+
+			chart.render();
+
+			new Legend({chart: chart}, "legend");
+		}
+
 		function setUrl(theme, rtl, a11y){
 			// Function to reload page with specified theme, rtl, and a11y settings
 			location.search = "?theme=" + theme + (rtl ? "&dir=rtl" : "") + (a11y ? "&a11y=true" : "");
 		}
 
-		// Create menu choices and links to test other themes
-		var tmpString = '';
-		array.forEach(availableThemes, function(theme){
-			if(theme != curTheme){
-				tmpString +=
-					'<a href="?theme=' + theme.theme + '">' + theme.theme + '</' + 'a> (' +
-					'<a href="?theme=' + theme.theme + '&dir=rtl">RTL</' + 'a> ' +
-					'<a href="?theme=' + theme.theme + '&a11y=true">high-contrast</' + 'a> ' +
-					'<a href="?theme=' + theme.theme + '&dir=rtl&a11y=true">RTL+high-contrast</' + 'a> )' +
-					' - by: ' + theme.author + ' <br>';
-			}
-		});
-		dom.byId('themeData').innerHTML = tmpString;
+		function createThemeChoices() {
+			// Create menu choices and links to test other themes
+			array.forEach(availableThemes, function(theme){
+				if(theme != curTheme){
+					tmpString +=
+						'<a href="?theme=' + theme.theme + '">' + theme.theme + '</' + 'a> (' +
+						'<a href="?theme=' + theme.theme + '&dir=rtl">RTL</' + 'a> ' +
+						'<a href="?theme=' + theme.theme + '&a11y=true">high-contrast</' + 'a> ' +
+						'<a href="?theme=' + theme.theme + '&dir=rtl&a11y=true">RTL+high-contrast</' + 'a> )' +
+						' - by: ' + theme.author + ' <br>';
+				}
 
-		// Create menu choices to test other themes
-		array.forEach(availableThemes, function(theme){
-			registry.byId('themeMenu').addChild(new RadioMenuItem({
-				id: theme.theme + "_radio",
-				label: theme.theme,
-				group: "theme",
-				checked: theme.theme == curTheme,
-				onClick: function(){
-					// Change theme, keep current a11y and rtl settings
-					setUrl(theme.theme, a11y, rtl);
+				themeMenu.addChild(new RadioMenuItem({
+					id: theme.theme + "_radio",
+					label: theme.theme,
+					group: "theme",
+					checked: theme.theme == curTheme,
+					onClick: function(){
+						// Change theme, keep current a11y and rtl settings
+						setUrl(theme.theme, a11y, rtl);
+					}
+				}));
+			});
+			themeData.innerHTML = tmpString;
+
+			themeMenu.addChild(new MenuSeparator({}));
+			// add RTL checkbox
+			themeMenu.addChild(new CheckedMenuItem({
+				label: "RTL",
+				checked: rtl,
+				onChange: function(val){
+					// Keep current theme and a11y setting, but use new dir setting
+					setUrl(curTheme, val, a11y);
 				}
 			}));
-		});
-		registry.byId('themeMenu').addChild(new MenuSeparator({}));
-		registry.byId('themeMenu').addChild(new CheckedMenuItem({
-			label: "RTL",
-			checked: rtl,
-			onChange: function(val){
-				// Keep current theme and a11y setting, but use new dir setting
-				setUrl(curTheme, val, a11y);
-			}
-		}));
-		registry.byId('themeMenu').addChild(new CheckedMenuItem({
-			label: "high contrast",
-			checked: a11y,
-			onChange: function(val){
-				// Keep current theme and dir setting, but use high-contrast (or not-high-contrast) setting
-				setUrl(curTheme, rtl, val);
-			}
-		}));
+			// add high contrast checkbox
+			themeMenu.addChild(new CheckedMenuItem({
+				label: "high contrast",
+				checked: a11y,
+				onChange: function(val){
+					// Keep current theme and dir setting, but use high-contrast (or not-high-contrast) setting
+					setUrl(curTheme, rtl, val);
+				}
+			}));
+		}
 
-		// It's the server's responsibility to localize the date displayed in the (non-edit) version of an InlineEditBox,
-		// but since we don't have a server we'll hack it in the client
-		registry.byId("backgroundArea").set('value', locale.format(new Date(2005, 11, 30), { selector: 'date' }));
+		function setBackground(color){
+			query('.dijitAccordionChildWrapper .dijitContentPane').style('background', color);
+		}
 
-		var nineAm = new Date(0);
-		nineAm.setHours(9);
-		registry.byId("timePicker").set('value', locale.format(nineAm, { selector: 'time' }));
+		function showDialog (){
+			dialog1.show();
+			dialog1.focus();
+		}
+
+		function showDialogAb (){
+			dialogAB.show();
+			dialogAB.focus();
+		}
+
+		function setTextBoxPadding (event){
+			// summary:
+			//		Handler for when a MenuItem is clicked to set non-default padding for
+			//		TextBox widgets
+
+			// Effectively ignore clicks on the	 currently checked MenuItem
+			var input = registry.byId(event.currentTarget.id);
+			if(!input.get("checked")){
+				input.set("checked", true);
+			}
+
+			// val will be "theme default", "0px", "1px", ..., "5px"
+			var val = input.get("label");
+
+			// Set class on body to get requested padding, and remove any previously set class
+			if(currentInputPadding){
+				domClass.remove(document.body, currentInputPadding);
+				currentInputPadding = "";
+			}
+			if(val != "theme default"){
+				currentInputPadding = "inputPadding" + val.replace("px", "");
+				domClass.add(document.body, currentInputPadding);
+			}
+
+			// Clear previously checked MenuItem (radio-button effect).
+			array.forEach(input.getParent().getChildren(), function(mi){
+				if(mi != this){
+					mi.set("checked", false);
+				}
+			}, this);
+		}
+
+		function hideLoadingScreen () {
+			loaderInner.innerHTML += " done.";
+
+			setTimeout(function hideLoader(){
+				baseFx.fadeOut({
+					node: 'loader',
+					duration: 500,
+					onEnd: function(n){
+						n.style.display = "none";
+						// fix bug where it isn't rendering correct;
+						main.resize();
+					}
+				}).play();
+			}, 250);
+		}
+
+		function createDgrid () {
+			grid = new OnDemandGrid({
+				collection: collection,
+				className: 'dgrid-autoheight',
+				columns: {
+					id: 'id',
+					name: 'name',
+					type: 'type'
+				}
+			}, 'dgrid');
+
+			grid.startup();
+		}
 	});
 });
