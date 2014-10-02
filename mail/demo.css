@@ -177,7 +177,9 @@ body .dojoSplitPane {
 	font-weight:bold;
 	
 }
-
+#contactIndex {
+    text-align: center;
+}
 /* buttons on Contact tab for filtering list of contacts to a given letter */
 .contactIndex, .contactIndexAll {
 	margin: 0.5em;

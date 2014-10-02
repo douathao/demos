@@ -2,8 +2,6 @@ require([
 	'dojo/_base/declare',
 	'put-selector/put',
 	'dojo/on',
-	'dojo/promise/all',
-	'dojo/request',
 	'dojo/_base/lang',
 	'dojo/string',
 	'dojo/parser',
@@ -14,13 +12,13 @@ require([
 	'dojo/_base/fx',
 	'dojo/fx/easing',
 	'dstore/Memory',
+	'dstore/RequestMemory',
 	'dstore/Tree',
 	'dojo/date/locale',
 	'dojo/date/stamp',
 	'dgrid/Tree',
 	'dgrid/OnDemandGrid',
 	'dgrid/Editor',
-	'dgrid/test/data/createSyncStore',
 	'dstore/legacy/DstoreAdapter',
 	'dijit/registry',
 	'dijit/Tooltip',
@@ -53,8 +51,6 @@ require([
 	declare,
 	put,
 	on,
-	all,
-	request,
 	lang,
 	string,
 	parser,
@@ -65,13 +61,13 @@ require([
 	fx,
 	easing,
 	Memory,
+	RequestMemory,
 	dstoreTree,
 	locale,
 	stamp,
 	Tree,
 	OnDemandGrid,
 	Editor,
-	createSyncStore,
 	DstoreAdapter,
 	registry,
 	Tooltip,
@@ -79,56 +75,48 @@ require([
 	Urchin
 ) {
 	parser.parse();
-	var FolderStore = declare([Memory, dstoreTree]),
+	var FolderStore = declare([RequestMemory, dstoreTree]),
 		mailStore,
 		contactStore,
 		folderTree,
 		messagesList,
 		contactGrid,
-		lagacyStore;
+		lagacyStore,
+		tabs = registry.byId('tabs');
 
 	dom.setSelectable('folderTree', false);
 
-	document.body.setAttribute('role', 'application');
-
 	// make tooltips go down (from buttons on toolbar) rather than to the right
-	Tooltip.defaultPosition = ["above", "below"];
+	Tooltip.defaultPosition = ['above', 'below'];
 
 	new Urchin({
-		acct: "UA-3572741-1",
+		acct: 'UA-3572741-1',
 		GAonLoad: function(){
-			this.trackPageView("/demos/dijitmail");
+			this.trackPageView('/demos/dijitmail');
 		}
 	});
 
 	registry.byId('fakeFetch').report = function (percent){
-		if (this.indeterminate) { return " conecting." }
-		return string.substitute("Fetching: ${0} of ${1} messages.", [percent * this.maximum, this.maximum]);
+		if (this.indeterminate) { return ' conecting.'; }
+		return string.substitute('Fetching: ${0} of ${1} messages.', [percent * this.maximum, this.maximum]);
 	};
 
 	// Events
-	on(search, 'click', searchMessages);
-	on(newMsg, 'click', newMessage);
-	on(options, 'click', function () {
+	on(dom.byId('search'), 'click', searchMessages);
+	on(dom.byId('newMsg'), 'click', newMessage);
+	on(dom.byId('options'), 'click', function () {
 		registry.byId('optionsDialog').show();
 	});
-	on(getMail, 'click', fakeDownload);
+	on(dom.byId('getMail'), 'click', fakeDownload);
 
-	getData();
+	init();
 
-	function getData () {
-		var requests = [
-			request.get('mail.json', {handleAs: "json"}),
-			request.get('contacts.php', {handleAs: "json"})
-		];
+	function init() {
+		var ContactStore = declare([RequestMemory]);
 
-		all(requests).then(init);
-	}
+		mailStore = new FolderStore({target: '/demos/mail/mail.json'});
 
-	function init(promiseData) {
-		mailStore = new FolderStore({data: promiseData[0]});
-		contactStore = window.cs = createSyncStore( promiseData[1]);
-		lagacyStore = new DstoreAdapter(contactStore);
+		contactStore = new ContactStore({target: '/demos/mail/contacts.php'});
 
 		// Write A-Z "links" on contactIndex tab to do filtering
 		genIndex();
@@ -137,18 +125,11 @@ require([
 
 		createFolderList();
 
-		tabs.watch("selectedChildWidget", function(name, oval, nval){
+		tabs.watch('selectedChildWidget', function(name, oval, nval){
 			// Prevent the contact grid from some weird rendering.
-			if (nval.title === "Contacts" && contactGrid === undefined) {
+			if (nval.title === 'Contacts' && contactGrid === undefined) {
 				createContactList();
 			}
-		});
-
-		// update display field when contact change
-		on(contactStore, 'update', function (obj) {
-			var item = obj.target;
-			item.display = item.first + ' ' + item.last + ' <' + item.email + '>';
-			contactStore.putSync(item);
 		});
 
 		fx.fadeOut({
@@ -161,8 +142,10 @@ require([
 	}
 
 	function createFolderList () {
-		folderTree = new declare([OnDemandGrid, Tree])({
-			collection: mailStore.filter({parent: "0", type: 'folder'}),
+		var FolderTree = declare([OnDemandGrid, Tree]);
+
+		folderTree = new FolderTree({
+			collection: mailStore.filter({parent: '0', type: 'folder'}),
 			showHeader: false,
 			className: 'dgrid-autoheight',
 			shouldExpand: function (row, level, previouslyExpanded) {
@@ -186,7 +169,6 @@ require([
 				}
 			]
 		}, 'folderTree');
-		folderTree.startup();
 
 		folderTree.on('.dgrid-cell:click', function (event) {
 			// summary:
@@ -194,15 +176,14 @@ require([
 			var cell = folderTree.cell(event),
 				type = cell.row.data.label,
 				filter = {
-					type: "message"
+					type: 'message',
+					folder: type
 				};
 
-			if (type === 'Save') {
-				filter.folder = /Stuff./;
-			} else if (type !== 'Folders') {
-				filter.folder = type;
+			if (type !== 'Save' && type !== 'Folders') {
+				messagesList.set('collection', mailStore.filter(filter));
 			}
-			messagesList.set('collection', mailStore.filter(filter));
+
 		});
 	}
 
@@ -217,70 +198,92 @@ require([
 					label: 'Date',
 					width: '10%',
 					formatter: function(value, object){
-						return locale.format(stamp.fromISOString(object.sent), {selector: "date"});
+						return locale.format(stamp.fromISOString(object.sent), {selector: 'date'});
 					}
 				}
 			}
 		}, 'messagesList');
-		messagesList.startup();
 
 		messagesList.on('.dgrid-cell:click', function (event) {
 			// summary:
 			//		when user clicks a row in the message list pane
 			var cell = messagesList.cell(event),
-				item = cell.row.data;
+				item = cell.row.data,
 				sent = locale.format(
 					stamp.fromISOString(item.sent),
-					{formatLength: "long", selector: "date"}),
-				messageInner = "<span class='messageHeader'>From: " + item.sender + "<br>" +
-					"Subject: "+ item.label + "<br>" +
-					"Date: " + sent + "<br><br></span>" +
+					{formatLength: 'long', selector: 'date'}),
+				messageInner = '<span class="messageHeader">From: ' + item.sender + '<br>' +
+					'Subject: ' + item.label + '<br>' +
+					'Date: ' + sent + '<br><br></span>' +
 					item.text;
-			registry.byId("message").setContent(messageInner);
+			registry.byId('message').setContent(messageInner);
 		});
 	}
 
 	function createContactList () {
-		contactGrid = new declare([OnDemandGrid, Editor])({
+		var ContactGrid = declare([OnDemandGrid, Editor]);
+		contactGrid = new ContactGrid({
 			collection: contactStore.filter({}),
 			className: 'dgrid-autoheight',
 			columns: [
 				{
 					label: 'First',
 					field: 'first',
-					editor: "text",
+					editor: 'text',
 					autoSave: true,
-					editOn: "dblclick"
+					editOn: 'dblclick'
 				},
 				{
 					label: 'Last',
 					field: 'last',
-					editor: "text",
+					editor: 'text',
 					autoSave: true,
-					editOn: "dblclick"
+					editOn: 'dblclick'
 				},
 				{
 					label: 'Email',
 					field: 'email',
-					editor: "text",
+					editor: 'text',
 					autoSave: true,
-					editOn: "dblclick"
+					editOn: 'dblclick'
 				}
 			]
 		}, 'contactGrid');
-		contactGrid.startup();
+
+		contactGrid.on('dgrid-datachange', function (event) {
+			// summary:
+			//		update the item display property for the new message combobox
+			var cell = event.cell,
+				field = cell.column.field,
+				data = cell.row.data,
+				value = event.value,
+				first = field === 'first' ? value : data.first,
+				last  = field === 'last' ? value : data.last;
+
+			if (field === 'first' || field === 'last') {
+				contactStore.get(event.rowId).then(function (item) {
+					// update display
+					item[field] = value;
+					item.display = first + ' ' + last + ' <' + item.email + '>';
+					return item;
+				}).then(function (item) {
+					// save data
+					contactStore.put(item);
+				});
+			}
+		});
 	}
 
 	function genIndex(){
 		// summary:
 		//		generate A-Z push buttons for navigating contact list
-		var ci = dom.byId("contactIndex");
+		var ci = dom.byId('contactIndex');
 
 		function addChar(c, func, cls){
 			// add specified character, when clicked will execute func
-			var span = document.createElement("span");
+			var span = document.createElement('span');
 			span.innerHTML = c;
-			span.className = cls || "contactIndex";
+			span.className = cls || 'contactIndex';
 			ci.appendChild(span);
 			new FisheyeLite(
 				{
@@ -292,28 +295,35 @@ require([
 				},
 				span
 			);
-			on(span, "click", func || function(){ contactGrid.set('collection', contactStore.filter({first: new RegExp(c + '.')})) });
-			on(span, "clicm", function(){
-				query(">", ci).removeClass("contactIndexSelected");
-				domClass.add(span, "contactIndexSelected");
+
+			on(span, 'click', func || function() {
+				contactGrid.set('collection', contactStore.filter({first: new RegExp(c + '.')}));
+			});
+			on(span, 'click', function(){
+				query('>', ci).removeClass('contactIndexSelected');
+				domClass.add(span, 'contactIndexSelected');
 			});
 		}
 
-		addChar("ALL", function(){contactGrid.set('collection', contactStore.filter({}))}, 'contactIndexAll' );
-		for(var l = "A".charCodeAt(0); l <= "Z".charCodeAt(0); l++){
-			addChar(String.fromCharCode(l))
+		addChar('ALL', function(){
+			contactGrid.set('collection', contactStore.filter({}));
+		}, 'contactIndexAll' );
+
+		for(var l = 'A'.charCodeAt(0); l <= 'Z'.charCodeAt(0); l++){
+			addChar(String.fromCharCode(l));
 		}
-		addChar("ALL", function(){contactGrid.set('collection', contactStore.filter({}))}, 'contactIndexAll' );
+
+		addChar('ALL', function(){
+			contactGrid.set('collection', contactStore.filter({}));
+		}, 'contactIndexAll' );
 	}
 
-	// Globals used by demo.html
-	paneId = 1;
-
-	 function searchMessages(){
+	var paneId = 1;
+	function searchMessages(){
 		// summary:
 		//		do a custom search for messages across inbox folders
-		var query = {type: "message"};
-		var searchCriteria = searchForm.attr('value');
+		var query = {type: 'message'};
+		var searchCriteria = dom.byId('searchForm').attr('value');
 		for(var key in searchCriteria){
 			var val = searchCriteria[key];
 			if(val){
@@ -321,19 +331,28 @@ require([
 			}
 			
 		}
-		 messagesList.set('collection', mailStore.filter(query));
+		messagesList.set('collection', mailStore.filter(query));
 	}
 
 	function newMessage () {
 		/* make a new tab for composing the message */
 		var newTab = new mail.NewMessage({
-			id: "new"+paneId,
+			id: 'new'+paneId,
 			postCreate: function () {
-				this.to.set('store', lagacyStore);
+				var self = this;
+				contactStore.filter().fetch().then(function (data) {
+					lagacyStore = new DstoreAdapter(new Memory({
+						identifier: 'id',
+						label: 'display',
+						data: data
+					}));
+					self.to.set('store', lagacyStore);
+				});
+
 				this.own(
 					on(this.okButton, 'click', lang.hitch(this, function () {
-						if (this.to.get('value') === "") {
-							alert("Please enter a recipient address");
+						if (this.to.get('value') === '') {
+							alert('Please enter a recipient address');
 						} else {
 							showSendBar();
 						}
@@ -347,7 +366,7 @@ require([
 
 		lang.mixin(newTab,
 			{
-				title: "New Message #" + paneId++,
+				title: 'New Message #' + paneId++,
 				closable: true,
 				onClose: testClose
 			}
@@ -357,19 +376,19 @@ require([
 	}
 
 	// for "new message" tab closing
-	testClose = function(pane,tab){
-		return confirm("Are you sure you want to leave your changes?");
-	};
+	function testClose (){
+		return confirm('Are you sure you want to leave your changes?');
+	}
 
 	// fake mail download code:
 	var numMails;
-	var updateFetchStatus = function(x){
-		if(x == 0){
+	function updateFetchStatus (x){
+		if(x === 0){
 			registry.byId('fakeFetch').update({ indeterminate: false });
 			return;
 		}
 		registry.byId('fakeFetch').update({ progress: x + 1 });
-		if(x == numMails){
+		if(x === numMails){
 			fx.fadeOut({ node: 'fetchMail', duration:800,
 				// set progress back to indeterminate. we're cheating, because this
 				// doesn't actually have any data to "progress"
@@ -379,7 +398,7 @@ require([
 				}
 			}).play();
 		}
-	};
+	}
 
 	function fakeDownload (){
 		domStyle.set('fetchMail', 'visibility', 'visible');
@@ -390,20 +409,20 @@ require([
 			var func = lang.partial(updateFetchStatus, ii);
 			setTimeout(func,  ((ii + 1) * (Math.floor(Math.random()*100) + 400)));
 		}
-	};
+	}
 
 	// fake sending dialog progress bar
-	stopSendBar = function(){
+	function stopSendBar (){
 		registry.byId('fakeSend').update({ indeterminate: false });
 		registry.byId('sendDialog').hide();
 		tabs.selectedChildWidget.onClose = function(){return true;};  // don't want confirm message
 		tabs.closeChild(tabs.selectedChildWidget);
-	};
+	}
 
-	showSendBar = function(){
+	function showSendBar (){
 		registry.byId('fakeSend').update({ indeterminate: true });
 		registry.byId('sendDialog').show();
 		setTimeout(function(){stopSendBar();}, 3000);
-	};
+	}
 });
 

@@ -1,8 +1,4 @@
-{ 
-	"identifier": "id",
-	"label": "display",
-	"data": [
-
+[
 <?php
     $counter = 0;
     $ext = array("@gmail.com", "@yahoo.com", "@dojotoolkit.org");
@@ -24,6 +20,6 @@
 		}
 	}
 ?>
-	{"name": "Blue Bell", "email": "blue.bell@gmail.com"}
-   ]
-}
+	{"first": "Blue", "last": "Bell", "email": "blue.bell@gmail.com"}
+]
+
