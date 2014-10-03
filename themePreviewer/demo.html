@@ -5,27 +5,16 @@
 
 	<title>Theme Previewer</title>
 
-	<link rel="stylesheet" href="../../dijit/themes/claro/document.css"/>
-	<link rel="stylesheet" href="../../dijit/themes/claro/claro.css"/>
+	<link data-stylesheet="document" rel="stylesheet" href="../../dijit/themes/claro/document.css"/>
+	<link data-stylesheet="dijit" rel="stylesheet" href="../../dijit/themes/claro/claro.css"/>
+
+	<!--empty links are use to swtich theme-->
 	<!--RTL-->
-	<link rel="stylesheet" href=""/>
+	<link data-stylesheet="rtl" rel="stylesheet" href=""/>
 	<!--dgrid theme css-->
-	<link rel="stylesheet" href=""/>
+	<link data-stylesheet="dgrid" rel="stylesheet" href=""/>
+
 	<link rel="stylesheet" href="demo.css"/>
-	<script>
-		var dojoConfig = {
-			async: true,
-			parseOnLoad: false,
-			baseUrl: '../..',
-			packages: [
-				'dgrid',
-				'dijit',
-				'dojo',
-				'dojox',
-				'dstore'
-			]
-		};
-	</script>
 	<script type="text/javascript" src="../../dojo/dojo.js"></script>
 
 	<script type="text/javascript" src="src.js"></script>
@@ -269,18 +258,11 @@
 	
 		<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props='title:"Tree"'>
 			<!-- tree widget -->
-			<div data-dojo-type="dijit/Tree"
-				 data-dojo-props="model: continentModel, query:{ type:'continent'}, label:'Continents', openOnClick:true"
-					></div>
+			<div id="tree"></div>
 		</div>
 	
 		<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="title:'Rootless Tree'">
-			<div id="rootlessTree" data-dojo-type="dijit/Tree" data-dojo-props="
-						model:continentModel,
-						query:{ type:'continent' },
-						showRoot: false,
-						openOnClick:true
-					"></div>
+			<div id="rootlessTree"></div>
 		</div>
 	
 		<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props='selected:true, title:"Calendar"'>
@@ -305,7 +287,7 @@
 	<!-- end AccordionContainer -->
 	
 	<!-- top tabs (marked as "center" to take up the main part of the BorderContainer) -->
-	<div data-dojo-type="dijit/layout/TabContainer" data-dojo-props="region:'center', tabStrip:true" data-dojo-id="topTabs">
+	<div data-dojo-type="dijit/layout/TabContainer" data-dojo-props="region:'center', tabStrip:true" id="topTabs" data-dojo-id="topTabs">
 	
 	<div id="basicFormTab" data-dojo-type="dijit/layout/ContentPane"
 		 data-dojo-props="title:'Basic Form Widgets', style:'padding:10px;display:none;'">
@@ -510,22 +492,13 @@
 	
 		<h2>dijit/form/FilteringSelect</h2>
 		<label for="filteringSelect">Enabled w/placeHolder: </label>
-		<input id="filteringSelect" data-dojo-type="dijit/form/FilteringSelect" data-dojo-props="
-						placeHolder:'place',
-						store:continentStore,
-						searchAttr:'name',
-						name:'state2'
-					">
+		<input id="filteringSelect">
 	
 		<label for="filteringSelect2">Disabled w/placeHolder: </label>
-		<input id="filteringSelect2" data-dojo-type="dijit/form/FilteringSelect" data-dojo-props="
-						store:continentStore, name:'state2', searchAttr:'name'
-					" disabled>
+		<input id="filteringSelect2" data-dojo-type="dijit/form/FilteringSelect" disabled>
 	
 		<label for="filteringSelect3">Disabled w/value: </label>
-		<input id="filteringSelect3" data-dojo-type="dijit/form/FilteringSelect" data-dojo-props="
-						store: continentStore, searchAttr:'name', value:'CA'
-					" disabled>
+		<input id="filteringSelect3">
 	
 	</div>
 	
@@ -807,11 +780,7 @@
 	
 		<h2>dijit/form/FilteringSelect + Inline + remote data store</h2>
 		(HTML inline before)
-					<span id="backgroundArea2" data-dojo-type="dijit/InlineEditBox" data-dojo-props='
-						editor: "dijit/form/FilteringSelect",
-						editorParams:{ store: continentStore, autoComplete: true, promptMessage: "Please enter a place"},
-						width:"300px"
-					'>The earth</span>
+					<span id="backgroundArea2">The earth</span>
 		(HTML after)
 	
 	</div>
@@ -851,7 +820,7 @@
 		 data-dojo-props='title:"Chart", style:"padding:10px; display:none;"'>
 		<div id="chart"></div>
 		<div id="legend"></div>
-		<p>Current theme is MiamiNice, to see other themes go <a href="http://download.dojotoolkit.org/release-1.5.0/dojo-release-1.5.0/dojox/charting/tests/theme_preview.html">here</a></p>
+		<p>Current theme is MiamiNice, to see other themes go <a target="_blank" href="http://download.dojotoolkit.org/release-1.10.1/dojo-release-1.10.1/dojox/charting/tests/theme_preview.html">here</a></p>
 	</div>
 	<!-- end dgrid tab -->
 	
