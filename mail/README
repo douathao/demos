@@ -13,6 +13,8 @@ Dependencies:
 
 	Dojo Core
 	Dijit (Lots!)
+	dgrid 0.4
+	dstore
 
 -------------------------------------------------------------------------------
 Installation instructions

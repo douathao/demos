@@ -1,0 +1,40 @@
+<div data-dojo-type="dijit/layout/BorderContainer" data-dojo-attach-point="container" title="Composing..." class="newMail">
+	<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'top'" class="top">
+		<table width="100%">
+			<tr>
+				<td class="to"><label for="to_${id}">To:</label></td>
+				<td width=100%>
+					<input data-dojo-attach-point="to" data-dojo-type="dijit/form/ComboBox" id="to_${id}" data-dojo-props="hasDownArrow: false, searchAttr: 'display'">
+				</td>
+			</tr>
+			<tr>
+				<td class="subject"><label for="${id}_subject">Subject:</label></td>
+				<td width=100%>
+					<select data-dojo-type="dijit/form/ComboBox" id="${id}_subject" data-dojo-props="hasDownArrow: false">
+						<option></option>
+						<option>progress meeting</option>
+						<option>reports</option>
+						<option>lunch</option>
+						<option>vacation</option>
+						<option>status meeting</option>
+					</select>
+				</td>
+			</tr>
+		</table>
+		<hr noshade size="1">
+	</div>
+
+	<!-- new message part -->
+	<div data-dojo-type="dijit/Editor"
+		 data-dojo-props="region:'center',extraPlugins:['createLink','insertImage',{name:'dijit._editor.plugins.FontChoice', command: 'fontName', generic: true},'fontSize']" >
+		<i> This is just a sample message. There is email-address auto-complete in the to: field.
+			<br><br> give it a whirl.
+		</i>
+	</div>
+	<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'bottom'" class="bottom" align="center">
+		<button data-dojo-attach-point="okButton" data-dojo-type="dijit/form/Button" data-dojo-props="iconClass: 'mailIconOk'">Send
+		</button>
+		<button data-dojo-attach-point="cancelButton" data-dojo-type="dijit/form/Button" data-dojo-props="iconClass: 'mailIconCancel'">Cancel
+		</button>
+	</div>
+</div>

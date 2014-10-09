@@ -1,17 +1,33 @@
-dependencies = {
-	layers: [
-		{
-			name: "../demos/mail/src.js",
-			resourceName: "demos.mail.src",
-			dependencies: [
-				"demos.mail.src"
-			]
+var profile = {
+	layers: {
+		'demos/mail': {
+			include: [ 'demos/mail/src', 'demos/mail/Mail' ]
 		}
-	],
+	},
 
-	prefixes: [
-		[ "dijit", "../dijit" ],
-		[ "dojox", "../dojox" ],
-		[ "demos", "../demos" ]
-	]
-}
+	packages: [{
+		name: 'dojo',
+		location: '../dojo'
+	},{
+		name: 'dijit',
+		location: '../dijit'
+	},{
+		name: 'dojox',
+		location: '../dojox'
+	},{
+		name: 'demos',
+		location: '../demos'
+	},{
+		name: 'dstore',
+		location: '../dstore'
+	},{
+		name: 'dgrid',
+		location: '../dgrid'
+	},{
+		name: 'xstyle',
+		location: '../xstyle'
+	},{
+		name: 'put-selector',
+		location: '../put-selector'
+	}]
+};

@@ -3,56 +3,12 @@
 <head>
 	<title>Demo Mail Application</title>
 	<link rel="stylesheet" href="demo.css">
-	<script type="text/javascript"  src="../../dojo/dojo.js" charset="utf-8"></script>
-	<script type="text/javascript" src="src.js" charset="utf-8"></script>
+	<script src="../../dojo/dojo.js" charset="utf-8"></script>
+	<script src="src.js" charset="utf-8"></script>
 
 </head>
 <body class="claro" role="application">
 	<div id="preLoader"><p></p></div>
-	<!-- Inline declaration for programmatically created "New Message" tabs -->
-	<div data-dojo-type="dijit/Declaration" data-dojo-props="widgetClass: 'mail.NewMessage'">
-		<div data-dojo-type="dijit/layout/BorderContainer" data-dojo-attach-point="container" title="Composing..." data-dojo-props="closeable: true">
-			<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'top'" style="height:60px; overflow: visible; z-index: 10; color:#666;">
-				<table width="100%">
-					<tr style="padding-top:5px;">
-						<td style="padding-left:20px; padding-right: 8px; text-align:right;"><label for="to_${id}">To:</label></td>
-						<td width=100%>
-							<input data-dojo-attach-point="to" data-dojo-type="dijit/form/ComboBox" id="to_${id}" data-dojo-props="hasDownArrow: false, searchAttr: 'display'" style="width: 40em;">
-						</td>
-					</tr>
-					<tr>
-						<td style="padding-left: 20px; padding-right:8px; text-align:right;"><label for="${id}_subject">Subject:</label></td>
-						<td width=100%>
-							<select data-dojo-type="dijit/form/ComboBox" id="${id}_subject" data-dojo-props="hasDownArrow: false" style="width: 40em;">
-								<option></option>
-								<option>progress meeting</option>
-								<option>reports</option>
-								<option>lunch</option>
-								<option>vacation</option>
-								<option>status meeting</option>
-							</select>
-						</td>
-					</tr>
-				</table>
-				<hr noshade size="1">
-			</div>
-
-			<!-- new message part -->
-			<div data-dojo-type="dijit/Editor" style="overflow:hidden"
-				 data-dojo-props="region:'center',extraPlugins:['createLink','insertImage',{name:'dijit._editor.plugins.FontChoice', command: 'fontName', generic: true},'fontSize']" >
-				<i> This is just a sample message. There is email-address auto-complete in the to: field.
-					<br><br> give it a whirl.
-				</i>
-			</div>
-			<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'bottom'" style="height:32px" align="center">
-				<button data-dojo-attach-point="okButton" data-dojo-type="dijit/form/Button" data-dojo-props="iconClass: 'mailIconOk'">Send
-				</button>
-				<button data-dojo-attach-point="cancelButton" data-dojo-type="dijit/form/Button" data-dojo-props="iconClass: 'mailIconCancel'">Cancel
-				</button>
-			</div>
-		</div>
-	</div>
-
 
 	<div data-dojo-type="dijit/layout/BorderContainer" id="main">
 
@@ -77,17 +33,16 @@
 			<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId: 'options'">Set various options</div>
 		</div>
 
-		<div data-dojo-type="dijit/layout/TabContainer" id="tabs" data-dojo-id="tabs" data-dojo-props="region: 'center'">
+		<div data-dojo-type="dijit/layout/TabContainer" id="tabs" data-dojo-props="region: 'center'">
 			<!-- main section with tree, table, and preview -->
 			<div data-dojo-type="dijit/layout/BorderContainer" id="inbox" title="Inbox" data-dojo-props="design: 'sidebar'">
 				<div data-dojo-type="dijit/layout/AccordionContainer" id="accordion"
-					 data-dojo-props="region: 'leading', minSize: 20, splitter: true"
-					 style="width:20%;">
+					 data-dojo-props="region: 'leading', minSize: 20, splitter: true">
 					<div data-dojo-type="dijit/layout/AccordionPane" title="Folders">
 						<div id="folderTree"></div>
 					</div>
 					<div data-dojo-type="dijit/layout/AccordionPane" title="Search Messages">
-						<form data-dojo-type="dijit/form/Form" data-dojo-id="searchForm">
+						<form data-dojo-type="dijit/form/Form" id="searchForm">
 							<table>
 								<tr>
 									<td><label for="subjectSearch">Subject:</label></td>
@@ -108,21 +63,13 @@
 									<td><input data-dojo-type="dijit/form/TextBox" id="bodySearch" name="text"></td>
 								</tr>
 								<tr>
-									<td colspan="2" align="center"><button data-dojo-type="dijit/form/Button" id="search" style="float: right">Search</button></td>
+									<td colspan="2" align="center"><button data-dojo-type="dijit/form/Button" id="search" type="submit">Search</button></td>
 								</tr>
 							</table>
 						</form>
 					</div>
 				</div>  <!-- end of Accordion -->
 
-				<!-- list of messages pane -->
-				<div id="messageList" data-dojo-type="dijit/layout/ContentPane" tabindex="0"
-					 data-dojo-props="region: 'top', minSize: 115, splitter: true"
-					 role="messageList" aria-live="assertive" aria-atomic="true">
-					<div style="height:150px">
-						<div id="messagesList"></div>
-					</div>
-				</div>
 				<!-- message preview pane -->
 				<div id="message" data-dojo-type="dijit/layout/ContentPane" tabindex="0"
 					 data-dojo-props="region: 'center', minSize: 20"
@@ -142,21 +89,17 @@
 					by clicking on items in the left Accordion.
 					Then click on the messages in the above list to display them.
 					There's no server running, so the app is just a facade and it doesn't really do anything.
-					<!-- TODO: delete button (we can delete since we are using ItemFileWriteStore -->
 					</p>
 					<p>
-					<span style="font-family: 'Comic Sans MS',Textile,cursive; color: blue; font-style: italic;">-- Bill</span>
+					<span>-- Bill</span>
 					</p>
 				</div> <!-- end of "message" -->
 
 			</div> <!-- end of inbox -->
 
-			<div data-dojo-type="dijit/layout/BorderContainer" title="Contacts">
+			<div data-dojo-type="dijit/layout/BorderContainer" title="Contacts" id="contactsTab">
 				<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'top'">
 					<div id="contactIndex"></div>
-				</div>
-				<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'center'" id="contactList">
-					<div id="contactGrid"></div>
 				</div>
 				<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'bottom'">
 					Edit your contact information from this page by clicking entries in the table above.
@@ -166,28 +109,28 @@
 		</div> <!-- end of TabContainer -->
 
 		<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'bottom'" id="footer" align="left">
-			<span style="float:right;">DojoMail v1.2 (demo only)</span>
-			<div id="fetchMail" style="opacity:0;visibility:hidden">
-				<div id="fakeFetch" data-dojo-type="dijit/ProgressBar" style="height:15px; width:275px;" data-dojo-props="indeterminate: true"></div>
+			<span>DojoMail v1.10 (demo only)</span>
+			<div id="fetchMail">
+				<div id="fakeFetch" data-dojo-type="dijit/ProgressBar" data-dojo-props="indeterminate: true"></div>
 			</div>
 		</div>
 	</div> <!-- end of main -->
 
 	<div data-dojo-type="dijit/Dialog" id="optionsDialog" title="Options:">
 		<table>
-		<tr><td style="text-align:right;"><label for="option1">Transport type:</label></td><td>
+		<tr><td><label for="option1">Transport type:</label></td><td>
 		<select id="option1" data-dojo-type="dijit/form/FilteringSelect">
 			<option value="pop3">POP3</option>
 			<option value="imap">IMAP</option>
 		</select></td></tr>
-		<tr><td style="text-align:right;"><label for="option2">Server:</label></td><td><input id="option2" data-dojo-type="dijit/form/TextBox" type="text">
+		<tr><td class="alignRight"><label for="option2">Server:</label></td><td><input id="option2" data-dojo-type="dijit/form/TextBox" type="text">
 		</td></tr>
 
-		<tr><td style="text-align:right;"><input type="checkbox" id="fooCB" data-dojo-type="dijit/form/CheckBox"></td><td><label for="fooCB">Leave messages on Server</label></td></tr>
-		<tr><td style="text-align:right;"><input type="checkbox" id="fooCB2" data-dojo-type="dijit/form/CheckBox"></td><td><label for="fooCB2">Remember Password</label></td></tr>
+		<tr><td class="alignRight"><input type="checkbox" id="fooCB" data-dojo-type="dijit/form/CheckBox"></td><td><label for="fooCB">Leave messages on Server</label></td></tr>
+		<tr><td class="alignRight"><input type="checkbox" id="fooCB2" data-dojo-type="dijit/form/CheckBox"></td><td><label for="fooCB2">Remember Password</label></td></tr>
 
 		<tr>
-			<td colspan="2" style="text-align:center;">
+			<td colspan="2" class="alignCenter">
 				<button data-dojo-type="dijit/form/Button" type="submit" data-dojo-props="iconClass: 'mailIconOk'">OK</button>
 				<button data-dojo-type="dijit/form/Button" type="submit" data-dojo-props="iconClass: 'mailIconCancel'">Abort</button>
 			</td>
@@ -195,8 +138,8 @@
 		</table>
 	</div>
 	<div data-dojo-type="dijit/Dialog" id="sendDialog" title="Sending Mail">
-		<div id="sendMailBar" style="text-align:center">
-			<div  id="fakeSend" data-dojo-type="dijit/ProgressBar" style="height:15px; width:175px;" data-dojo-props="indeterminate: true"></div>
+		<div id="sendMailBar">
+			<div  id="fakeSend" data-dojo-type="dijit/ProgressBar" data-dojo-props="indeterminate: true"></div>
 		</div>
 	</div>
 </body>
